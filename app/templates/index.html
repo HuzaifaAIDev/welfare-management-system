@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Welfare Management System — Bahadurabad</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --green:#16a34a; --green-light:#dcfce7; --green-dark:#15803d; --green-deep:#14532d;
+    --red:#dc2626; --red-light:#fee2e2;
+    --blue:#2563eb; --blue-light:#dbeafe;
+    --amber:#d97706; --amber-light:#fef3c7;
+    --gray:#6b7280; --gray-light:#f3f4f6; --gray-border:#e5e7eb;
+    --white:#fff; --dark:#111827;
+    --shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+    --shadow-lg:0 10px 25px rgba(0,0,0,.1);
+  }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#f0fdf4; color:var(--dark); min-height:100vh; }
+
+  /* AUTH */
+  #auth-screen { display:flex; align-items:center; justify-content:center; min-height:100vh;
+    background:linear-gradient(135deg,#16a34a 0%,#15803d 50%,#166534 100%); }
+  .auth-card { background:var(--white); border-radius:20px; padding:40px; width:440px; max-width:95vw; box-shadow:var(--shadow-lg); }
+  .auth-logo { text-align:center; margin-bottom:28px; }
+  .auth-logo .icon { font-size:48px; display:block; margin-bottom:8px; }
+  .auth-logo h1 { font-size:22px; color:var(--green); font-weight:700; }
+  .auth-logo p { color:var(--gray); font-size:13px; margin-top:4px; }
+  .auth-tabs { display:flex; border-radius:10px; overflow:hidden; border:1px solid var(--gray-border); margin-bottom:24px; }
+  .auth-tab { flex:1; padding:10px; text-align:center; cursor:pointer; font-size:14px; font-weight:600; background:var(--gray-light); color:var(--gray); }
+  .auth-tab.active { background:var(--green); color:var(--white); }
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; font-size:13px; font-weight:600; color:var(--dark); margin-bottom:6px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width:100%; padding:10px 14px; border:1.5px solid var(--gray-border); border-radius:8px; font-size:14px; outline:none; }
+  .form-group textarea { resize:vertical; min-height:80px; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+  .btn { display:block; width:100%; padding:12px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; }
+  .btn-green { background:var(--green); color:#fff; } .btn-green:hover { background:var(--green-dark); }
+  .btn-sm { display:inline-block; width:auto; padding:6px 14px; font-size:13px; border-radius:6px; }
+  .btn-red { background:var(--red); color:#fff; }
+  .btn-blue { background:var(--blue); color:#fff; }
+  .btn-amber { background:var(--amber); color:#fff; }
+  .btn-outline-red { background:#fff; border:1.5px solid var(--red); color:var(--red); }
+  .icon-btn { background:transparent; border:none; cursor:pointer; padding:4px 8px; border-radius:6px; color:var(--red); font-size:16px; }
+  .icon-btn:hover { background:var(--red-light); }
+  .error-msg { color:var(--red); font-size:13px; margin-top:8px; text-align:center; }
+  .success-msg { color:var(--green); font-size:13px; margin-top:8px; }
+
+  /* ADMIN LOGIN OVERLAY */
+  #admin-screen { display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:999; align-items:center; justify-content:center; }
+  .admin-login-card { background:#fff; border-radius:16px; padding:36px; width:380px; max-width:95vw; box-shadow:var(--shadow-lg); }
+  .admin-login-card h2 { color:var(--green-dark); font-size:20px; margin-bottom:20px; text-align:center; }
+
+  /* APP LAYOUT */
+  #app-screen, #admin-page { display:none; min-height:100vh; flex-direction:column; }
+  header, .admin-header { background:var(--green); color:#fff; padding:0 24px; height:60px; display:flex; align-items:center; justify-content:space-between; box-shadow:var(--shadow); position:sticky; top:0; z-index:100; }
+  header .brand, .admin-header .brand { font-size:18px; font-weight:700; }
+  header .user-info { display:flex; align-items:center; gap:12px; font-size:14px; }
+  .role-badge { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; }
+  .role-admin { background:#fbbf24; color:#78350f; }
+  .role-donor { background:#bfdbfe; color:#1e3a8a; }
+  .role-needy { background:#fce7f3; color:#831843; }
+  .btn-logout { background:rgba(255,255,255,.2); border:none; color:#fff; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:13px; }
+  .btn-logout:hover { background:rgba(255,255,255,.3); }
+
+  nav, .admin-subnav { background:#fff; border-bottom:1px solid var(--gray-border); display:flex; overflow-x:auto; }
+  .admin-subnav { background:var(--green-deep); }
+  .nav-item { padding:14px 20px; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap; color:var(--gray); border-bottom:3px solid transparent; }
+  .nav-item:hover { color:var(--green); }
+  .nav-item.active { color:var(--green); border-bottom-color:var(--green); }
+  .admin-nav-tab { padding:14px 20px; font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap; color:rgba(255,255,255,.75); border-bottom:3px solid transparent; }
+  .admin-nav-tab:hover { color:#fff; }
+  .admin-nav-tab.active { color:#fff; border-bottom-color:#bbf7d0; }
+
+  main, .admin-main { flex:1; padding:24px; max-width:1200px; margin:0 auto; width:100%; }
+
+  /* ANNOUNCEMENT BOXES */
+  .announce-stack { display:flex; flex-direction:column; gap:12px; margin-bottom:24px; }
+  .announcement-box { border-radius:12px; padding:14px 18px; font-size:14px; line-height:1.55; border-left:5px solid; position:relative; }
+  .announcement-donor { background:var(--blue-light); border-color:var(--blue); color:#1e3a8a; }
+  .announcement-needy { background:var(--green-light); border-color:var(--green); color:var(--green-dark); }
+  .announcement-all   { background:var(--amber-light); border-color:var(--amber); color:#78350f; }
+  .announcement-box .ann-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .announcement-box .ann-title { font-weight:700; font-size:13px; }
+  .announcement-box .ann-time { font-size:11px; opacity:.75; }
+  .announcement-empty { font-size:13px; color:var(--gray); padding:8px 4px; }
+
+  /* CARDS */
+  .section { display:none; } .section.active { display:block; }
+  .page-title { font-size:22px; font-weight:700; margin-bottom:4px; }
+  .page-sub { color:var(--gray); font-size:14px; margin-bottom:20px; }
+  .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; }
+  .card { background:#fff; border-radius:12px; padding:18px; box-shadow:var(--shadow); border:1px solid var(--gray-border); }
+  .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:8px; }
+  .card-title { font-size:15px; font-weight:700; }
+  .card-row { font-size:13px; color:var(--gray); margin-bottom:6px; display:flex; gap:6px; }
+  .card-row span:first-child { font-weight:600; color:var(--dark); min-width:90px; }
+  .id-pill { display:inline-block; background:var(--green-light); color:var(--green-dark); padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+  .id-pill-blue { background:var(--blue-light); color:#1e3a8a; }
+
+  /* STATS */
+  .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; margin-bottom:18px; }
+  .stat-card { background:#fff; border-radius:12px; padding:18px; box-shadow:var(--shadow); text-align:center; border-left:4px solid var(--green); }
+  .stat-num { font-size:28px; font-weight:800; color:var(--green); }
+  .stat-label { font-size:12px; color:var(--gray); margin-top:4px; }
+  .panel { background:#fff; border-radius:12px; padding:20px; box-shadow:var(--shadow); border:1px solid var(--gray-border); margin-bottom:20px; }
+  .panel h3 { font-size:16px; font-weight:700; color:var(--green-dark); margin-bottom:14px; }
+
+  /* FORM */
+  .form-panel { background:#fff; border-radius:12px; padding:24px; box-shadow:var(--shadow); border:1px solid var(--gray-border); max-width:560px; margin-bottom:24px; }
+  .form-panel h3 { font-size:16px; font-weight:700; margin-bottom:18px; color:var(--green); }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .pwd-toggle-btn { position:absolute; right:6px; top:50%; transform:translateY(-50%); background:var(--gray-light); border:1px solid var(--gray-border); color:var(--gray); font-size:12px; font-weight:600; padding:5px 10px; border-radius:6px; cursor:pointer; }
+  .pwd-toggle-btn:hover { background:var(--green-light); color:var(--green-dark); border-color:var(--green); }
+
+  /* BADGES */
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; white-space:nowrap; }
+  .badge-pending,.badge-open { background:var(--amber-light); color:var(--amber); }
+  .badge-approved,.badge-fulfilled,.badge-distributed,.badge-resolved { background:var(--green-light); color:var(--green); }
+  .badge-rejected,.badge-cancelled { background:var(--red-light); color:var(--red); }
+  .badge-in_review { background:var(--amber-light); color:var(--amber); }
+
+  .action-bar { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .empty-state { text-align:center; padding:50px 20px; color:var(--gray); }
+  .empty-state .empty-icon { font-size:42px; margin-bottom:10px; }
+  .tabs { display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
+  .tab { padding:8px 18px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; background:var(--gray-light); color:var(--gray); border:none; }
+  .tab.active { background:var(--green); color:#fff; }
+  .admin-note { background:var(--amber-light); border-left:4px solid var(--amber); padding:10px 14px; border-radius:0 8px 8px 0; margin-top:10px; font-size:13px; }
+
+  /* SEARCH BAR */
+  .search-bar { display:flex; gap:8px; margin-bottom:14px; }
+  .search-bar input { flex:1; padding:10px 14px; border:1.5px solid var(--gray-border); border-radius:8px; font-size:14px; outline:none; }
+  .search-bar input:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+  .search-bar button { padding:10px 20px; background:var(--green); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+  .search-bar button.clear { background:var(--gray); }
+
+  /* TABLE */
+  .tbl { width:100%; border-collapse:collapse; font-size:13px; }
+  .tbl th { padding:10px 12px; text-align:left; background:var(--gray-light); border-bottom:2px solid var(--gray-border); font-weight:700; white-space:nowrap; }
+  .tbl td { padding:10px 12px; border-bottom:1px solid var(--gray-border); }
+  .tbl tr:hover td { background:#fafafa; }
+  .scroll-x { overflow-x:auto; }
+
+  /* ADMIN COUNT GRID */
+  .count-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; }
+  .count-tile { background:var(--green-light); border:1px solid #bbf7d0; border-radius:10px; padding:14px; text-align:center; }
+  .count-tile .ct-num { font-size:24px; font-weight:800; color:var(--green-dark); }
+  .count-tile .ct-lbl { font-size:12px; color:var(--green-dark); margin-top:4px; font-weight:600; }
+  .count-tile.zero { background:var(--gray-light); border-color:var(--gray-border); }
+  .count-tile.zero .ct-num, .count-tile.zero .ct-lbl { color:var(--gray); }
+
+  @media(max-width:700px) { .form-row { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<!-- ADMIN LOGIN OVERLAY -->
+<div id="admin-screen">
+  <div class="admin-login-card">
+    <h2>🔐 Admin Access</h2>
+    <div class="form-group"><label>Admin Password</label><input type="password" id="admin-pwd" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doAdminLogin()" /></div>
+    <button class="btn btn-green" onclick="doAdminLogin()">Enter Admin Panel</button>
+    <div id="admin-login-error" class="error-msg"></div>
+    <button onclick="closeAdminLogin()" style="margin-top:12px;background:none;border:none;color:var(--gray);cursor:pointer;font-size:13px;width:100%;">Cancel</button>
+  </div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="icon">🤝</span>
+      <h1>Welfare Management System</h1>
+      <p>Bahadurabad — Connecting hearts: blood, funds, rashan & counseling</p>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+      <div class="auth-tab" onclick="switchAuthTab('register')">Register</div>
+    </div>
+    <div id="login-form">
+      <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" /></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" /></div>
+      <button class="btn btn-green" onclick="doLogin()">Login</button>
+      <div id="login-error" class="error-msg"></div>
+      <div style="text-align:center;margin-top:12px;">
+        <button onclick="openForgotPassword()" style="background:none;border:none;color:var(--green-dark);cursor:pointer;font-size:13px;font-weight:600;text-decoration:underline;">Forgot Password?</button>
+      </div>
+      <div style="text-align:center;margin-top:8px;">
+        <button onclick="openAdminLogin()" style="background:none;border:none;color:var(--green-dark);cursor:pointer;font-size:13px;font-weight:600;">🔐 Admin Access</button>
+      </div>
+    </div>
+
+    <!-- FORGOT PASSWORD MODAL -->
+    <div id="forgot-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:16px;padding:28px;width:380px;max-width:95vw;box-shadow:0 10px 25px rgba(0,0,0,.2);">
+        <h3 style="color:var(--green-dark);margin-bottom:6px;">🔑 Forgot Password</h3>
+        <p style="font-size:13px;color:var(--gray);margin-bottom:14px;">Enter your registered email. We'll send your password to your inbox.</p>
+        <div class="form-group"><label>Email</label><input type="email" id="forgot-email" placeholder="you@example.com" /></div>
+        <button class="btn btn-green" onclick="submitForgotPassword()" id="forgot-submit-btn">Send Password to Email</button>
+        <div id="forgot-msg" style="margin-top:10px;font-size:13px;"></div>
+        <div style="text-align:center;margin-top:12px;">
+          <button onclick="closeForgotPassword()" style="background:none;border:none;color:var(--gray);cursor:pointer;font-size:13px;">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label>Full Name</label><input type="text" id="reg-name" /></div>
+        <div class="form-group"><label>Age</label><input type="number" id="reg-age" min="1" max="120" /></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" id="reg-email" /></div>
+      <div class="form-row">
+        <div class="form-group"><label>Phone</label><input type="text" id="reg-phone" /></div>
+        <div class="form-group"><label>CNIC</label><input type="text" id="reg-cnic" /></div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Min 8 chars, e.g. Aa@12345" oninput="checkPasswordStrength(this.value)" />
+        <div id="pwd-strength-msg" style="font-size:12px;margin-top:4px;color:var(--gray);"></div>
+        <div style="font-size:11px;margin-top:3px;color:#888;">Must contain: uppercase (A-Z), lowercase (a-z), number (0-9), special char (@#!$...)</div>
+      </div>
+      <div class="form-group"><label>I am a...</label>
+        <select id="reg-role">
+          <option value="donor">Donor (I want to give)</option>
+          <option value="needy">Needy (I need help)</option>
+        </select>
+      </div>
+      <button class="btn btn-green" onclick="doRegister()">Create Account</button>
+      <div id="register-error" class="error-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- USER APP -->
+<div id="app-screen">
+  <header>
+    <div class="brand">🤝 Welfare — Bahadurabad</div>
+    <div class="user-info">
+      <span id="header-name"></span>
+      <span id="header-id" style="font-size:12px;opacity:.85;"></span>
+      <span id="header-role" class="role-badge"></span>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <nav id="main-nav"></nav>
+  <main>
+    <div class="section active" id="sec-dashboard">
+      <div class="page-title">📊 Dashboard</div>
+      <div class="page-sub" id="dash-sub"></div>
+      <div id="user-announcements" class="announce-stack"></div>
+      <div id="dash-stats"></div>
+    </div>
+    <div class="section" id="sec-blood">
+      <div class="page-title">🩸 Blood Donation</div>
+      <div class="page-sub">Bahadurabad</div>
+      <div class="tabs" id="blood-tabs"></div>
+      <div id="blood-donate-panel"></div>
+      <div id="blood-request-panel"></div>
+      <div id="blood-list"></div>
+    </div>
+    <div class="section" id="sec-fund">
+      <div class="page-title">💰 Fund Donation</div>
+      <div class="page-sub">Bahadurabad</div>
+      <div class="tabs" id="fund-tabs"></div>
+      <div id="fund-donate-panel"></div>
+      <div id="fund-request-panel"></div>
+      <div id="fund-list"></div>
+    </div>
+    <div class="section" id="sec-food">
+      <div class="page-title">🌾 Rashan Donation</div>
+      <div class="page-sub">Bahadurabad</div>
+      <div class="tabs" id="food-tabs"></div>
+      <div id="food-donate-panel"></div>
+      <div id="food-request-panel"></div>
+      <div id="food-list"></div>
+    </div>
+    <div class="section" id="sec-problem">
+      <div class="page-title">💬 Problem Counseling</div>
+      <div class="page-sub">Bahadurabad</div>
+      <div class="tabs" id="problem-tabs"></div>
+      <div id="problem-submit-panel"></div>
+      <div id="problem-list"></div>
+    </div>
+    <div class="section" id="sec-password">
+      <div class="page-title">🔒 Change Password</div>
+      <div class="page-sub">Update the password used to sign in to your account.</div>
+      <div class="form-panel" id="change-password-card">
+        <div class="form-group">
+          <label>Current Password</label>
+          <div style="position:relative;">
+            <input type="password" id="cp-current" placeholder="Enter current password" style="padding-right:64px;" />
+            <button type="button" class="pwd-toggle-btn" onclick="togglePwdField('cp-current', this)">Show</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <div style="position:relative;">
+            <input type="password" id="cp-new" placeholder="Min 8 chars, e.g. Aa@12345" style="padding-right:64px;" oninput="checkPasswordStrength(this.value,'cp-strength-msg')" />
+            <button type="button" class="pwd-toggle-btn" onclick="togglePwdField('cp-new', this)">Show</button>
+          </div>
+          <div id="cp-strength-msg" style="font-size:12px;margin-top:4px;color:var(--gray);"></div>
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <div style="position:relative;">
+            <input type="password" id="cp-confirm" placeholder="Re-enter new password" style="padding-right:64px;" />
+            <button type="button" class="pwd-toggle-btn" onclick="togglePwdField('cp-confirm', this)">Show</button>
+          </div>
+        </div>
+        <button class="btn btn-green" id="cp-submit-btn" onclick="submitChangePassword()">Change Password</button>
+        <div id="cp-error" class="error-msg"></div>
+        <div id="cp-success" class="success-msg"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ADMIN PAGE (now using GREEN theme like donor/needy) -->
+<div id="admin-page">
+  <div class="admin-header">
+    <div class="brand">🛡️ Admin Panel — Bahadurabad</div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <span id="admin-logged-label" style="font-size:13px;opacity:.85;"></span>
+      <button class="btn-logout" onclick="closeAdminPage()">× Close</button>
+    </div>
+  </div>
+
+  <div class="admin-subnav">
+    <div class="admin-nav-tab active" onclick="showAdminTab('counts')" id="atab-counts">📦 Inventory & Counts</div>
+    <div class="admin-nav-tab" onclick="showAdminTab('users')" id="atab-users">👥 Donors & Needy</div>
+    <div class="admin-nav-tab" onclick="showAdminTab('requests')" id="atab-requests">📋 All Requests</div>
+    <div class="admin-nav-tab" onclick="showAdminTab('donations')" id="atab-donations">💗 All Donations</div>
+    <div class="admin-nav-tab" onclick="showAdminTab('announce')" id="atab-announce">📢 Announcements</div>
+  </div>
+
+  <div class="admin-main">
+
+    <!-- INVENTORY / COUNTS -->
+    <div class="admin-tab-section" id="asec-counts">
+      <div class="panel">
+        <h3>🩸 Blood Inventory (units, by group)</h3>
+        <div id="inv-blood" class="count-grid"></div>
+      </div>
+      <div class="panel">
+        <h3>🌾 Food Inventory (donations, by category)</h3>
+        <div id="inv-food" class="count-grid"></div>
+      </div>
+      <div class="panel">
+        <h3>💰 Fund Inventory</h3>
+        <div id="inv-fund" class="count-grid"></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="admin-tab-section" id="asec-users" style="display:none;">
+      <div class="panel">
+        <h3>🔍 Search Donors / Needy</h3>
+        <div class="search-bar">
+          <input type="text" id="user-search-input" placeholder="Search by Donor ID (DON-0001), Needy ID (NEE-0001), name, email, CNIC, phone..." onkeyup="if(event.key==='Enter')runUserSearch()" oninput="runUserSearch()" />
+          <button onclick="runUserSearch()">Search</button>
+          <button class="clear" onclick="clearUserSearch()">Clear</button>
+        </div>
+        <div id="user-search-results"></div>
+      </div>
+    </div>
+
+    <!-- REQUESTS -->
+    <div class="admin-tab-section" id="asec-requests" style="display:none;">
+      <div class="panel">
+        <div class="search-bar">
+          <input type="text" id="req-search-input" placeholder="Search requests by Needy ID, name, blood group, item, city..." oninput="renderRequestsTab(activeRequestsTab)" />
+          <button onclick="renderRequestsTab(activeRequestsTab)">Search</button>
+        </div>
+        <div class="tabs">
+          <button class="tab active" id="rtab-blood" onclick="setRequestsTab('blood')">🩸 Blood</button>
+          <button class="tab" id="rtab-fund" onclick="setRequestsTab('fund')">💰 Fund</button>
+          <button class="tab" id="rtab-food" onclick="setRequestsTab('food')">🌾 Rashan</button>
+          <button class="tab" id="rtab-problem" onclick="setRequestsTab('problem')">💬 Problems</button>
+        </div>
+        <div id="admin-requests-content"></div>
+      </div>
+    </div>
+
+    <!-- DONATIONS -->
+    <div class="admin-tab-section" id="asec-donations" style="display:none;">
+      <div class="panel">
+        <div class="search-bar">
+          <input type="text" id="don-search-input" placeholder="Search donations by Donor ID, name, blood group, item..." oninput="renderDonationsTab(activeDonationsTab)" />
+          <button onclick="renderDonationsTab(activeDonationsTab)">Search</button>
+        </div>
+        <div class="tabs">
+          <button class="tab active" id="dtab-blood" onclick="setDonationsTab('blood')">🩸 Blood</button>
+          <button class="tab" id="dtab-fund" onclick="setDonationsTab('fund')">💰 Fund</button>
+          <button class="tab" id="dtab-food" onclick="setDonationsTab('food')">🌾 Rashan</button>
+        </div>
+        <div id="admin-donations-content"></div>
+      </div>
+    </div>
+
+    <!-- ANNOUNCEMENTS -->
+    <div class="admin-tab-section" id="asec-announce" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <!-- DONOR announcements -->
+        <div class="panel" style="border-left:4px solid var(--blue);">
+          <h3 style="color:#1e3a8a;">📢 Donor Announcements</h3>
+          <textarea id="msg-input-donor" placeholder="Message shown to all donors..." style="margin-bottom:10px;"></textarea>
+          <button class="btn btn-blue btn-sm" onclick="postAnnouncement('donor')">Post to Donors</button>
+          <div id="msg-fb-donor" style="margin-top:8px;font-size:13px;"></div>
+          <hr style="margin:14px 0;border:none;border-top:1px solid var(--gray-border);">
+          <div id="list-msg-donor"></div>
+        </div>
+        <!-- NEEDY announcements -->
+        <div class="panel" style="border-left:4px solid var(--green);">
+          <h3>📢 Needy Announcements</h3>
+          <textarea id="msg-input-needy" placeholder="Message shown to all needy users..." style="margin-bottom:10px;"></textarea>
+          <button class="btn btn-green btn-sm" onclick="postAnnouncement('needy')">Post to Needy</button>
+          <div id="msg-fb-needy" style="margin-top:8px;font-size:13px;"></div>
+          <hr style="margin:14px 0;border:none;border-top:1px solid var(--gray-border);">
+          <div id="list-msg-needy"></div>
+        </div>
+      </div>
+      <div class="panel" style="border-left:4px solid var(--amber); margin-top:18px;">
+        <h3 style="color:#78350f;">📢 Broadcast (Donors + Needy)</h3>
+        <textarea id="msg-input-all" placeholder="Message shown to everyone..." style="margin-bottom:10px;"></textarea>
+        <button class="btn btn-amber btn-sm" onclick="postAnnouncement('all')">Broadcast</button>
+        <div id="msg-fb-all" style="margin-top:8px;font-size:13px;"></div>
+        <hr style="margin:14px 0;border:none;border-top:1px solid var(--gray-border);">
+        <div id="list-msg-all"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = '';
+const PLACE = 'Bahadurabad';
+
+let token = localStorage.getItem('wms_token');
+let currentUser = JSON.parse(localStorage.getItem('wms_user') || 'null');
+let adminToken = null;
+let adminRequestsData = null, adminDonationsData = null;
+let activeRequestsTab = 'blood', activeDonationsTab = 'blood';
+
+// ───── HELPERS ──────────────────────────────────────────────────────────
+function fmt(s){ return s ? new Date(s).toLocaleString() : '-'; }
+function emptyState(icon,msg){ return `<div class="empty-state"><div class="empty-icon">${icon}</div><p>${msg}</p></div>`; }
+function donorIdOf(id){ return `DON-${String(id).padStart(4,'0')}`; }
+function needyIdOf(id){ return `NEE-${String(id).padStart(4,'0')}`; }
+
+async function api(method, path, body=null) {
+  const opts = { method, headers:{ 'Authorization':`Bearer ${token}`, 'Content-Type':'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API+path, opts);
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) throw new Error(data.detail || 'Error');
+  return data;
+}
+async function adminApi(method, path, body=null) {
+  const opts = { method, headers:{ 'Authorization':`Bearer ${adminToken}`, 'Content-Type':'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}
+
+// ───── ADMIN LOGIN ──────────────────────────────────────────────────────
+function openAdminLogin(){ document.getElementById('admin-screen').style.display='flex'; document.getElementById('admin-pwd').focus(); }
+function closeAdminLogin(){ document.getElementById('admin-screen').style.display='none'; document.getElementById('admin-login-error').textContent=''; document.getElementById('admin-pwd').value=''; }
+async function doAdminLogin(){
+  const pwd = document.getElementById('admin-pwd').value;
+  const errEl = document.getElementById('admin-login-error');
+  errEl.textContent = '';
+  try {
+    const res = await fetch('/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pwd}) });
+    const data = await res.json();
+    if (!res.ok){ errEl.textContent = data.detail||'Wrong password'; return; }
+    adminToken = data.access_token;
+    document.getElementById('admin-logged-label').textContent='Logged in as Admin';
+    closeAdminLogin(); openAdminPage();
+  } catch(e){ errEl.textContent='Connection error: '+e.message; }
+}
+function openAdminPage(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('admin-page').style.display='flex';
+  showAdminTab('counts');
+}
+function closeAdminPage(){
+  document.getElementById('admin-page').style.display='none';
+  adminToken=null;
+  if (token && currentUser) document.getElementById('app-screen').style.display='flex';
+  else document.getElementById('auth-screen').style.display='flex';
+}
+
+// ───── ADMIN TABS ───────────────────────────────────────────────────────
+function showAdminTab(tab){
+  ['counts','users','requests','donations','announce'].forEach(t=>{
+    document.getElementById('asec-'+t).style.display = t===tab ? 'block':'none';
+    const el = document.getElementById('atab-'+t); if (el) el.classList.toggle('active', t===tab);
+  });
+  if (tab==='counts') loadInventory();
+  if (tab==='users') runUserSearch();
+  if (tab==='requests') loadAdminRequests();
+  if (tab==='donations') loadAdminDonations();
+  if (tab==='announce') loadAdminAnnouncementsPanel();
+}
+
+// ───── INVENTORY ────────────────────────────────────────────────────────
+async function loadInventory(){
+  try {
+    const inv = await adminApi('GET','/admin/inventory');
+    document.getElementById('inv-blood').innerHTML =
+      Object.keys(inv.blood).sort().map(g=>{
+        const v = inv.blood[g]||0;
+        return `<div class="count-tile ${v?'':'zero'}"><div class="ct-num">${v}</div><div class="ct-lbl">🩸 ${g}</div></div>`;
+      }).join('');
+    const foodIcons = {Rice:'🍚',Flour:'🌾',Oil:'🫙',Sugar:'🍬',Pulses:'🫘',Other:'📦'};
+    document.getElementById('inv-food').innerHTML =
+      Object.keys(inv.food).map(c=>{
+        const v = inv.food[c]||0;
+        const icon = foodIcons[c]||'🌾';
+        return `<div class="count-tile ${v?'':'zero'}"><div class="ct-num">${v} kg</div><div class="ct-lbl">${icon} ${c}</div></div>`;
+      }).join('');
+    document.getElementById('inv-fund').innerHTML =
+      `<div class="count-tile ${inv.fund?'':'zero'}" style="grid-column:span 2;"><div class="ct-num">PKR ${(inv.fund||0).toLocaleString()}</div><div class="ct-lbl">💰 Cash Available</div></div>`;
+  } catch(e){ document.getElementById('inv-blood').innerHTML = `<p style="color:var(--red)">${e.message}</p>`; }
+}
+
+// ───── USER SEARCH ──────────────────────────────────────────────────────
+async function runUserSearch(){
+  const q = (document.getElementById('user-search-input')||{}).value || '';
+  const el = document.getElementById('user-search-results');
+  el.innerHTML = '<p style="color:var(--gray);font-size:13px;">Loading...</p>';
+  try {
+    const results = await adminApi('GET', `/admin/search${q?('?q='+encodeURIComponent(q)):''}`);
+    if (!results.length){ el.innerHTML = '<p style="color:var(--gray);font-size:13px;">No users found.</p>'; return; }
+    el.innerHTML = `<div class="scroll-x"><table class="tbl">
+      <thead><tr><th>ID</th><th>Name</th><th>Role</th><th>Phone</th><th>CNIC</th><th>Age</th><th>Email</th></tr></thead>
+      <tbody>${results.map(u=>`<tr>
+        <td><span class="id-pill ${u.role==='donor'?'id-pill-blue':''}">${u.display_id}</span></td>
+        <td style="font-weight:600;">${u.full_name}</td>
+        <td><span class="badge role-${u.role}">${u.role}</span></td>
+        <td>${u.phone||'—'}</td><td>${u.cnic||'—'}</td><td>${u.age||'—'}</td>
+        <td style="color:var(--gray);font-size:12px;">${u.email}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  } catch(e){ el.innerHTML = `<p style="color:var(--red);">Error: ${e.message}</p>`; }
+}
+function clearUserSearch(){ document.getElementById('user-search-input').value=''; runUserSearch(); }
+
+// ───── REQUESTS ─────────────────────────────────────────────────────────
+async function loadAdminRequests(){
+  const el = document.getElementById('admin-requests-content');
+  el.innerHTML = '<p style="color:var(--gray);">Loading...</p>';
+  try { adminRequestsData = await adminApi('GET','/admin/all-requests'); renderRequestsTab(activeRequestsTab); }
+  catch(e){ el.innerHTML = `<p style="color:var(--red);">Error: ${e.message}</p>`; }
+}
+function setRequestsTab(tab){
+  activeRequestsTab = tab;
+  ['blood','fund','food','problem'].forEach(t=>{
+    const el=document.getElementById('rtab-'+t); if(el) el.classList.toggle('active', t===tab);
+  });
+  renderRequestsTab(tab);
+}
+function reqMatches(r, term){
+  if (!term) return true;
+  const t = term.toLowerCase();
+  const hay = [r.requester?.needy_id, r.requester?.full_name, r.requester?.phone, r.blood_group, r.items_needed, r.city, r.urgency, r.reason, r.title, r.category, r.status]
+    .filter(Boolean).join(' ').toLowerCase();
+  return hay.includes(t);
+}
+function renderRequestsTab(tab){
+  const el = document.getElementById('admin-requests-content');
+  if (!adminRequestsData) return;
+  const term = (document.getElementById('req-search-input')||{}).value || '';
+  let items = adminRequestsData[tab==='problem'?'problems':tab] || [];
+  items = items.filter(r=>reqMatches(r,term));
+  if (!items.length){ el.innerHTML = emptyState('📋','No matching requests'); return; }
+
+  if (tab==='blood'){
+    el.innerHTML = `<div class="cards-grid">${items.map(r=>`
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">🩸 ${r.blood_group}</div>
+            <div style="margin-top:4px;"><span class="id-pill">${r.requester.needy_id}</span> ${r.requester.full_name}</div>
+          </div>
+          <span class="badge badge-${r.status}">${r.status}</span>
+        </div>
+        <div class="card-row"><span>Units</span>${r.units_needed}</div>
+        <div class="card-row"><span>City</span>${r.city}</div>
+        <div class="card-row"><span>Urgency</span>${r.urgency}</div>
+        <div class="card-row"><span>Date</span>${fmt(r.created_at)}</div>
+        ${r.notes?`<div class="card-row"><span>Notes</span>${r.notes}</div>`:''}
+        <div class="action-bar">
+          ${r.is_fulfilled||r.status==='fulfilled'
+            ? '<span style="color:var(--green);font-size:13px;font-weight:600;">✅ Already Fulfilled</span>'
+            : r.status==='cancelled'
+              ? '<span style="color:var(--red);font-size:13px;font-weight:600;">❌ Cancelled</span>'
+              : `<button class="btn btn-sm btn-green" onclick="fulfillReq('blood',${r.id})">✅ Fulfill</button>
+                 <button class="btn btn-sm btn-red" onclick="rejectReq('blood',${r.id})">❌ Cancel</button>`}
+        </div>
+      </div>`).join('')}</div>`;
+  } else if (tab==='fund'){
+    el.innerHTML = `<div class="cards-grid">${items.map(r=>`
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">💰 PKR ${(r.amount_needed||0).toLocaleString()}</div>
+            <div style="margin-top:4px;"><span class="id-pill">${r.requester.needy_id}</span> ${r.requester.full_name}</div>
+          </div>
+          <span class="badge badge-${r.status}">${r.status}</span>
+        </div>
+        <div class="card-row"><span>Reason</span>${r.reason||'—'}</div>
+        <div class="card-row"><span>Date</span>${fmt(r.created_at)}</div>
+        <div class="action-bar">
+          ${r.is_fulfilled||r.status==='approved'
+            ? '<span style="color:var(--green);font-size:13px;font-weight:600;">✅ Already Approved</span>'
+            : r.status==='rejected'
+              ? '<span style="color:var(--red);font-size:13px;font-weight:600;">❌ Rejected</span>'
+              : `<button class="btn btn-sm btn-green" onclick="fulfillReq('fund',${r.id})">✅ Approve</button>
+                 <button class="btn btn-sm btn-red" onclick="rejectReq('fund',${r.id})">❌ Reject</button>`}
+        </div>
+      </div>`).join('')}</div>`;
+  } else if (tab==='food'){
+    el.innerHTML = `<div class="cards-grid">${items.map(r=>`
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">🌾 Rashan Request</div>
+            <div style="margin-top:4px;"><span class="id-pill">${r.requester.needy_id}</span> ${r.requester.full_name}</div>
+          </div>
+          <span class="badge badge-${r.status}">${r.status}</span>
+        </div>
+        <div class="card-row"><span>Requested</span>${r.items_needed}</div>
+        ${(r.rice_kg||0)>0?`<div class="card-row"><span>🍚 Rice</span>${r.rice_kg} kg</div>`:''}
+        ${(r.flour_kg||0)>0?`<div class="card-row"><span>🌾 Flour</span>${r.flour_kg} kg</div>`:''}
+        ${(r.oil_kg||0)>0?`<div class="card-row"><span>🫙 Oil</span>${r.oil_kg} kg</div>`:''}
+        ${(r.sugar_kg||0)>0?`<div class="card-row"><span>🍬 Sugar</span>${r.sugar_kg} kg</div>`:''}
+        ${(r.pulses_kg||0)>0?`<div class="card-row"><span>🫘 Pulses</span>${r.pulses_kg} kg</div>`:''}
+        <div class="card-row"><span>Family</span>${r.family_members} members</div>
+        <div class="card-row"><span>City</span>${r.city}</div>
+        <div class="card-row"><span>Date</span>${fmt(r.created_at)}</div>
+        ${r.is_fulfilled?'<div style="color:var(--green);font-size:13px;font-weight:600;margin-top:8px;">✅ Already Distributed</div>':
+          r.status==='rejected'?'<div style="color:var(--red);font-size:13px;font-weight:600;margin-top:8px;">❌ Rejected</div>':`
+        <div style="margin-top:10px;padding:10px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;">
+          <div style="font-size:12px;font-weight:700;color:var(--green-dark);margin-bottom:8px;">📦 How much to distribute? (kg)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            ${(r.rice_kg||0)>0?`<div><label style="font-size:11px;">🍚 Rice (max ${r.rice_kg}kg)</label><input type="number" id="give-rice-${r.id}" min="0" max="${r.rice_kg}" step="0.5" value="${r.rice_kg}" style="width:100%;padding:4px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px;"></div>`:''}
+            ${(r.flour_kg||0)>0?`<div><label style="font-size:11px;">🌾 Flour (max ${r.flour_kg}kg)</label><input type="number" id="give-flour-${r.id}" min="0" max="${r.flour_kg}" step="0.5" value="${r.flour_kg}" style="width:100%;padding:4px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px;"></div>`:''}
+            ${(r.oil_kg||0)>0?`<div><label style="font-size:11px;">🫙 Oil (max ${r.oil_kg}kg)</label><input type="number" id="give-oil-${r.id}" min="0" max="${r.oil_kg}" step="0.5" value="${r.oil_kg}" style="width:100%;padding:4px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px;"></div>`:''}
+            ${(r.sugar_kg||0)>0?`<div><label style="font-size:11px;">🍬 Sugar (max ${r.sugar_kg}kg)</label><input type="number" id="give-sugar-${r.id}" min="0" max="${r.sugar_kg}" step="0.5" value="${r.sugar_kg}" style="width:100%;padding:4px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px;"></div>`:''}
+            ${(r.pulses_kg||0)>0?`<div><label style="font-size:11px;">🫘 Pulses (max ${r.pulses_kg}kg)</label><input type="number" id="give-pulses-${r.id}" min="0" max="${r.pulses_kg}" step="0.5" value="${r.pulses_kg}" style="width:100%;padding:4px;border:1px solid var(--gray-border);border-radius:6px;font-size:13px;"></div>`:''}
+          </div>
+        </div>
+        <div class="action-bar" style="margin-top:8px;">
+          <button class="btn btn-sm btn-green" onclick="fulfillFoodReq(${r.id},${JSON.stringify(r).replace(/"/g,'&quot;')})">✅ Distribute</button>
+          <button class="btn btn-sm btn-red" onclick="rejectReq('food',${r.id})">❌ Reject</button>
+        </div>`}
+      </div>`).join('')}</div>`;
+  } else if (tab==='problem'){
+    el.innerHTML = `<div class="cards-grid">${items.map(r=>`
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">💬 ${r.title}</div>
+            <div style="margin-top:4px;"><span class="id-pill">${r.requester.needy_id}</span> ${r.requester.full_name}</div>
+          </div>
+          <span class="badge badge-${r.status}">${(r.status||'').replace('_',' ')}</span>
+        </div>
+        <div class="card-row"><span>Category</span>${r.category}</div>
+        <div class="card-row"><span>Description</span>${(r.description||'').substring(0,100)}${(r.description||'').length>100?'...':''}</div>
+        <div class="card-row"><span>Date</span>${fmt(r.created_at)}</div>
+        ${r.admin_response?`<div class="admin-note"><strong>Response:</strong><br>${r.admin_response}</div>`:''}
+        <div style="margin-top:10px;">
+          <textarea id="aresp-${r.id}" placeholder="Counseling response..." style="width:100%;padding:8px;border:1.5px solid var(--gray-border);border-radius:8px;font-size:13px;min-height:60px;">${r.admin_response||''}</textarea>
+        </div>
+        <div class="action-bar">
+          <button class="btn btn-sm btn-blue" onclick="adminRespondProblem(${r.id},'in_review')">📝 In Review</button>
+          <button class="btn btn-sm btn-green" onclick="adminRespondProblem(${r.id},'resolved')">✅ Resolve</button>
+        </div>
+      </div>`).join('')}</div>`;
+  }
+}
+
+async function fulfillFoodReq(id, r){
+  // Read admin-entered kg amounts
+  const rice=parseFloat(document.getElementById(`give-rice-${id}`)?.value)||0;
+  const flour=parseFloat(document.getElementById(`give-flour-${id}`)?.value)||0;
+  const oil=parseFloat(document.getElementById(`give-oil-${id}`)?.value)||0;
+  const sugar=parseFloat(document.getElementById(`give-sugar-${id}`)?.value)||0;
+  const pulses=parseFloat(document.getElementById(`give-pulses-${id}`)?.value)||0;
+  if(rice+flour+oil+sugar+pulses<=0){ alert('⚠️ Please enter at least one item amount to distribute.'); return; }
+  try {
+    await adminApi('PATCH', `/admin/requests/food/${id}/fulfill`, {rice_kg:rice,flour_kg:flour,oil_kg:oil,sugar_kg:sugar,pulses_kg:pulses});
+    await Promise.all([loadAdminRequests(), loadInventory()]);
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+async function fulfillReq(kind, id){
+  try {
+    await adminApi('PATCH', `/admin/requests/${kind}/${id}/fulfill`);
+    await Promise.all([loadAdminRequests(), loadInventory()]);
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+async function rejectReq(kind, id){
+  try {
+    await adminApi('PATCH', `/admin/requests/${kind}/${id}/reject`);
+    await loadAdminRequests();
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+async function adminRespondProblem(id, status){
+  const resp = (document.getElementById(`aresp-${id}`)||{}).value || '';
+  try {
+    await adminApi('PATCH', `/problem/${id}/respond`, { admin_response:resp, status });
+    await loadAdminRequests();
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
+// ───── DONATIONS ────────────────────────────────────────────────────────
+async function loadAdminDonations(){
+  const el = document.getElementById('admin-donations-content');
+  el.innerHTML = '<p style="color:var(--gray);">Loading...</p>';
+  try { adminDonationsData = await adminApi('GET','/admin/all-donations'); renderDonationsTab(activeDonationsTab); }
+  catch(e){ el.innerHTML = `<p style="color:var(--red);">Error: ${e.message}</p>`; }
+}
+function setDonationsTab(tab){
+  activeDonationsTab = tab;
+  ['blood','fund','food'].forEach(t=>{
+    const el=document.getElementById('dtab-'+t); if(el) el.classList.toggle('active', t===tab);
+  });
+  renderDonationsTab(tab);
+}
+function donMatches(d,term){
+  if (!term) return true;
+  const t = term.toLowerCase();
+  const hay = [d.donor?.donor_id, d.donor?.full_name, d.donor?.phone, d.blood_group, d.items, d.city, d.purpose, String(d.amount), d.status]
+    .filter(Boolean).join(' ').toLowerCase();
+  return hay.includes(t);
+}
+function renderDonationsTab(tab){
+  const el = document.getElementById('admin-donations-content');
+  if (!adminDonationsData) return;
+  const term = (document.getElementById('don-search-input')||{}).value || '';
+  let items = (adminDonationsData[tab]||[]).filter(d=>donMatches(d,term));
+  if (!items.length){ el.innerHTML = emptyState('💗','No matching donations'); return; }
+
+  if (tab==='blood'){
+    el.innerHTML = `<div class="cards-grid">${items.map(d=>`
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">🩸 ${d.blood_group}</div>
+            <div style="margin-top:4px;"><span class="id-pill id-pill-blue">${d.donor.donor_id}</span> ${d.donor.full_name}</div>
+          </div>
+          <span class="badge badge-${d.status}">${d.status}</span>
+        </div>
+        <div class="card-row"><span>Units</span>${d.units}</div>
+        <div class="card-row"><span>City</span>${d.city}</div>
+        <div class="card-row"><span>Date</span>${fmt(d.created_at)}</div>
+        <div class="action-bar">
+          ${d.is_fulfilled||d.status==='fulfilled'||d.status==='approved'
+            ? '<span style="color:var(--green);font-size:13px;font-weight:600;">✅ Already Added to Stock</span>'
+            : `<button class="btn btn-sm btn-green" onclick="fulfillDonation('blood',${d.id})">✅ Accept &amp; Add to Stock</button>`}
+        </div>
+      </div>`).join('')}</div>`;
+  } else if (tab==='fund'){
+    el.innerHTML = `<div class="cards-grid">${items.map(d=>`
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">💰 PKR ${(d.amount||0).toLocaleString()}</div>
+            <div style="margin-top:4px;"><span class="id-pill id-pill-blue">${d.donor.donor_id}</span> ${d.donor.full_name}</div>
+          </div>
+        </div>
+        ${d.purpose?`<div class="card-row"><span>Purpose</span>${d.purpose}</div>`:''}
+        <div class="card-row"><span>Date</span>${fmt(d.created_at)}</div>
+        <div class="action-bar">
+          <button class="btn btn-sm btn-green" onclick="fulfillDonation('fund',${d.id})">✅ Accept &amp; Add to Funds</button>
+        </div>
+      </div>`).join('')}</div>`;
+  } else if (tab==='food'){
+    el.innerHTML = `<div class="cards-grid">${items.map(d=>`
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">🌾 Rashan Donation</div>
+            <div style="margin-top:4px;"><span class="id-pill id-pill-blue">${d.donor.donor_id}</span> ${d.donor.full_name}</div>
+          </div>
+          <span class="badge badge-${d.status}">${d.status}</span>
+        </div>
+        <div class="card-row"><span>Items</span>${d.items}</div>
+        ${(d.rice_kg||0)>0?`<div class="card-row"><span>🍚 Rice</span>${d.rice_kg} kg</div>`:''}
+        ${(d.flour_kg||0)>0?`<div class="card-row"><span>🌾 Flour</span>${d.flour_kg} kg</div>`:''}
+        ${(d.oil_kg||0)>0?`<div class="card-row"><span>🫙 Oil</span>${d.oil_kg} kg</div>`:''}
+        ${(d.sugar_kg||0)>0?`<div class="card-row"><span>🍬 Sugar</span>${d.sugar_kg} kg</div>`:''}
+        ${(d.pulses_kg||0)>0?`<div class="card-row"><span>🫘 Pulses</span>${d.pulses_kg} kg</div>`:''}
+        <div class="card-row"><span>City</span>${d.city}</div>
+        <div class="card-row"><span>Date</span>${fmt(d.created_at)}</div>
+        <div class="action-bar">
+          ${d.is_fulfilled||d.status==='approved'||d.status==='distributed'
+            ? '<span style="color:var(--green);font-size:13px;font-weight:600;">✅ Already Added to Stock</span>'
+            : `<button class="btn btn-sm btn-green" onclick="fulfillDonation('food',${d.id})">✅ Accept &amp; Add to Stock (kg)</button>`}
+        </div>
+      </div>`).join('')}</div>`;
+  }
+}
+async function fulfillDonation(kind, id){
+  try {
+    await adminApi('PATCH', `/admin/donations/${kind}/${id}/fulfill`);
+    await Promise.all([loadAdminDonations(), loadInventory()]);
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
+// ───── ANNOUNCEMENTS (admin panel) ──────────────────────────────────────
+async function postAnnouncement(audience){
+  const inp = document.getElementById('msg-input-'+audience);
+  const fb = document.getElementById('msg-fb-'+audience);
+  const msg = inp.value.trim();
+  if (!msg){ fb.innerHTML='<span style="color:var(--red);">Please type a message</span>'; return; }
+  try {
+    await adminApi('POST','/admin/message',{ message:msg, audience });
+    inp.value='';
+    fb.innerHTML='<span style="color:var(--green);">✅ Posted</span>';
+    loadAdminAnnouncementsPanel();
+  } catch(e){ fb.innerHTML=`<span style="color:var(--red);">${e.message}</span>`; }
+}
+async function loadAdminAnnouncementsPanel(){
+  try {
+    const all = await adminApi('GET','/admin/messages');
+    const groups = { donor:[], needy:[], all:[] };
+    all.forEach(m=>{ (groups[m.audience]||groups.all).push(m); });
+    ['donor','needy','all'].forEach(a=>{
+      const el = document.getElementById('list-msg-'+a);
+      if (!el) return;
+      if (!groups[a].length){ el.innerHTML='<div class="announcement-empty">No announcements yet.</div>'; return; }
+      el.innerHTML = groups[a].map(m=>`
+        <div class="announcement-box announcement-${a}">
+          <div class="ann-head">
+            <span class="ann-title">📢 ${a.toUpperCase()}</span>
+            <span style="display:flex;gap:6px;align-items:center;">
+              <span class="ann-time">${fmt(m.created_at)}</span>
+              <button class="icon-btn" title="Delete" onclick="deleteAnnouncement(${m.id})">🗑️</button>
+            </span>
+          </div>
+          <div>${m.message}</div>
+        </div>`).join('');
+    });
+  } catch(e){}
+}
+async function deleteAnnouncement(id){
+  if (!confirm('Delete this announcement?')) return;
+  try { await adminApi('DELETE','/admin/messages/'+id); loadAdminAnnouncementsPanel(); }
+  catch(e){ alert('⚠️ '+e.message); }
+}
+
+// ───── AUTH ─────────────────────────────────────────────────────────────
+function switchAuthTab(tab){
+  document.getElementById('login-form').style.display = tab==='login'?'block':'none';
+  document.getElementById('register-form').style.display = tab==='register'?'block':'none';
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
+}
+async function doLogin(){
+  const email=document.getElementById('login-email').value, pwd=document.getElementById('login-password').value;
+  const form=new URLSearchParams({username:email,password:pwd});
+  const res=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:form});
+  const data=await res.json();
+  if (!res.ok){ document.getElementById('login-error').textContent=data.detail||'Login failed'; return; }
+  saveSession(data);
+}
+function openForgotPassword(){
+  document.getElementById('forgot-email').value = document.getElementById('login-email').value || '';
+  document.getElementById('forgot-msg').innerHTML = '';
+  const btn = document.getElementById('forgot-submit-btn');
+  btn.disabled = false; btn.textContent = 'Send Password to Email';
+  document.getElementById('forgot-modal').style.display = 'flex';
+}
+function closeForgotPassword(){
+  document.getElementById('forgot-modal').style.display = 'none';
+}
+async function submitForgotPassword(){
+  const email = document.getElementById('forgot-email').value.trim();
+  const msg = document.getElementById('forgot-msg');
+  const btn = document.getElementById('forgot-submit-btn');
+  if(!email){ msg.innerHTML = '<span style="color:var(--red);">Please enter your email.</span>'; return; }
+  btn.disabled = true; btn.textContent = 'Sending...';
+  try {
+    const res = await fetch(`${API}/auth/forgot-password`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){ throw new Error(data.detail || 'Request failed'); }
+    msg.innerHTML = '<span style="color:var(--green);">✅ If an account exists for this email, the password has been sent to it. Please check your inbox.</span>';
+    btn.textContent = '✅ Sent';
+  } catch(e){
+    msg.innerHTML = `<span style="color:var(--red);">${e.message}</span>`;
+    btn.disabled = false; btn.textContent = 'Send Password to Email';
+  }
+}
+function checkPasswordStrength(pwd, elId){
+  const el=document.getElementById(elId||'pwd-strength-msg');
+  if(!pwd){ el.textContent=''; return; }
+  const hasUpper=/[A-Z]/.test(pwd), hasLower=/[a-z]/.test(pwd),
+        hasDigit=/\d/.test(pwd), hasSpecial=/[!@#$%^&*()\-_=+\[\]{};':"\\|,.<>\/?~`]/.test(pwd),
+        hasLen=pwd.length>=8;
+  const missing=[];
+  if(!hasLen) missing.push('8+ characters');
+  if(!hasUpper) missing.push('uppercase letter');
+  if(!hasLower) missing.push('lowercase letter');
+  if(!hasDigit) missing.push('number');
+  if(!hasSpecial) missing.push('special character (@#!$...)');
+  if(missing.length===0){
+    el.style.color='var(--green)'; el.textContent='✅ Strong password';
+  } else {
+    el.style.color='var(--red)'; el.textContent='❌ Missing: '+missing.join(', ');
+  }
+}
+function validatePasswordStrength(pwd){
+  const hasUpper=/[A-Z]/.test(pwd), hasLower=/[a-z]/.test(pwd),
+        hasDigit=/\d/.test(pwd), hasSpecial=/[!@#$%^&*()\-_=+\[\]{};':"\\|,.<>\/?~`]/.test(pwd);
+  return pwd.length>=8 && hasUpper && hasLower && hasDigit && hasSpecial;
+}
+async function doRegister(){
+  const pwd=document.getElementById('reg-password').value;
+  if(!validatePasswordStrength(pwd)){
+    document.getElementById('register-error').textContent=
+      'Weak password! Must be 8+ characters with uppercase (A), lowercase (a), number (1) and special character (@). Example: Aa@12345';
+    return;
+  }
+  const body={
+    full_name:document.getElementById('reg-name').value,
+    email:document.getElementById('reg-email').value,
+    phone:document.getElementById('reg-phone').value,
+    age:parseInt(document.getElementById('reg-age').value)||null,
+    cnic:document.getElementById('reg-cnic').value,
+    password:pwd,
+    role:document.getElementById('reg-role').value
+  };
+  const res=await fetch(`${API}/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await res.json();
+  if (!res.ok){ document.getElementById('register-error').textContent=data.detail||'Registration failed'; return; }
+  saveSession(data);
+}
+// ───── CHANGE PASSWORD (dedicated navbar page) ──────────────────────────
+function togglePwdField(inputId, btn){
+  const input = document.getElementById(inputId);
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? 'Show' : 'Hide';
+}
+function resetChangePasswordForm(){
+  ['cp-current','cp-new','cp-confirm'].forEach(id=>{ document.getElementById(id).value = ''; });
+  document.getElementById('cp-strength-msg').textContent = '';
+  document.getElementById('cp-error').textContent = '';
+  document.getElementById('cp-success').textContent = '';
+  document.querySelectorAll('#change-password-card .pwd-toggle-btn').forEach(b=>{
+    const input = b.previousElementSibling;
+    if (input){ input.type = 'password'; }
+    b.textContent = 'Show';
+  });
+}
+async function submitChangePassword(){
+  const currentEl = document.getElementById('cp-current');
+  const newEl = document.getElementById('cp-new');
+  const confirmEl = document.getElementById('cp-confirm');
+  const errEl = document.getElementById('cp-error');
+  const okEl = document.getElementById('cp-success');
+  const btn = document.getElementById('cp-submit-btn');
+
+  const current_password = currentEl.value;
+  const new_password = newEl.value;
+  const confirm_password = confirmEl.value;
+
+  errEl.textContent = '';
+  okEl.textContent = '';
+
+  if (!current_password || !new_password || !confirm_password){
+    errEl.textContent = 'All fields are required.';
+    return;
+  }
+  if (new_password !== confirm_password){
+    errEl.textContent = 'New password and confirm password do not match.';
+    return;
+  }
+  if (!validatePasswordStrength(new_password)){
+    errEl.textContent = 'Weak password! Must be 8+ characters with uppercase (A), lowercase (a), number (1) and special character (@). Example: Aa@12345';
+    return;
+  }
+  if (new_password === current_password){
+    errEl.textContent = 'New password must be different from the current password.';
+    return;
+  }
+
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Changing...';
+  try {
+    const data = await api('POST', '/auth/change-password', { current_password, new_password, confirm_password });
+    resetChangePasswordForm();
+    okEl.textContent = '✅ ' + (data.message || 'Password changed successfully.');
+  } catch (e){
+    errEl.textContent = e.message || 'Could not change password. Please try again.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
+
+function saveSession(data){
+  token=data.access_token; currentUser={id:data.user_id,full_name:data.full_name,role:data.role};
+  localStorage.setItem('wms_token',token); localStorage.setItem('wms_user',JSON.stringify(currentUser));
+  initApp();
+}
+function doLogout(){
+  localStorage.removeItem('wms_token'); localStorage.removeItem('wms_user'); token=null; currentUser=null;
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+}
+
+// ───── USER APP ─────────────────────────────────────────────────────────
+function initApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-screen').style.display='flex';
+  const r = currentUser.role;
+  document.getElementById('header-name').textContent = currentUser.full_name;
+  const idLabel = r==='donor'?donorIdOf(currentUser.id) : r==='needy'?needyIdOf(currentUser.id) : 'ADMIN';
+  document.getElementById('header-id').textContent = `(${idLabel})`;
+  const rb = document.getElementById('header-role'); rb.textContent=r; rb.className=`role-badge role-${r}`;
+  buildNav(); showSection('dashboard'); loadDashboard();
+}
+function buildNav(){
+  document.getElementById('main-nav').innerHTML = [
+    {id:'dashboard',icon:'📊',label:'Dashboard'},
+    {id:'blood',icon:'🩸',label:'Blood'},
+    {id:'fund',icon:'💰',label:'Funds'},
+    {id:'food',icon:'🌾',label:'Rashan'},
+    {id:'problem',icon:'💬',label:'Counseling'},
+    {id:'password',icon:'🔒',label:'Change Password'},
+  ].map(i=>`<div class="nav-item${i.id==='dashboard'?' active':''}" onclick="showSection('${i.id}')"><span class="nav-icon">${i.icon}</span> ${i.label}</div>`).join('');
+}
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  const ids=['dashboard','blood','fund','food','problem','password'];
+  document.querySelectorAll('.nav-item').forEach((n,i)=>n.classList.toggle('active',ids[i]===id));
+  if (id==='blood') loadBloodSection();
+  if (id==='fund') loadFundSection();
+  if (id==='food') loadFoodSection();
+  if (id==='problem') loadProblemSection();
+  if (id==='dashboard') loadDashboard();
+  if (id==='password') resetChangePasswordForm();
+}
+
+// ───── ANNOUNCEMENTS (user side, audience-scoped) ───────────────────────
+async function loadUserAnnouncements(containerId){
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  try {
+    const role = currentUser.role;
+    const audience = role==='donor'?'donor':role==='needy'?'needy':null;
+    const url = audience ? `/admin/messages?audience=${audience}` : '/admin/messages';
+    const msgs = await api('GET', url);
+    if (!msgs.length){ el.innerHTML=''; return; }
+    el.innerHTML = msgs.map(m=>{
+      const cls = m.audience==='donor'?'announcement-donor':m.audience==='needy'?'announcement-needy':'announcement-all';
+      const label = m.audience==='donor'?'📢 For Donors':m.audience==='needy'?'📢 For Needy':'📢 Notice';
+      return `<div class="announcement-box ${cls}">
+        <div class="ann-head"><span class="ann-title">${label}</span><span class="ann-time">${fmt(m.created_at)}</span></div>
+        <div>${m.message}</div>
+      </div>`;
+    }).join('');
+  } catch(e){ el.innerHTML=''; }
+}
+
+// ───── DASHBOARD ────────────────────────────────────────────────────────
+async function loadDashboard(){
+  const r = currentUser.role;
+  document.getElementById('dash-sub').textContent = r==='donor' ? 'Thank you for your generosity!' : 'We are here to help you.';
+  await loadUserAnnouncements('user-announcements');
+  try {
+    const [bloods, bloodReqs, foods, foodReqs, funds, fundReqs, problems] = await Promise.all([
+      api('GET','/blood/donations'), api('GET','/blood/requests'),
+      api('GET','/food/donations'), api('GET','/food/requests'),
+      api('GET','/fund/donations'), api('GET','/fund/requests'),
+      api('GET','/problem/list'),
+    ]);
+    const totalFunds = funds.reduce((s,f)=>s+(f.amount||0),0);
+    document.getElementById('dash-stats').innerHTML = `
+      <div class="stat-grid">
+        ${r!=='needy'?`<div class="stat-card"><div class="stat-num">${bloods.length}</div><div class="stat-label">🩸 Blood Donations</div></div>`:''}
+        <div class="stat-card"><div class="stat-num">${bloodReqs.length}</div><div class="stat-label">🩸 Blood Requests</div></div>
+        ${r!=='needy'?`<div class="stat-card"><div class="stat-num">PKR ${totalFunds.toLocaleString()}</div><div class="stat-label">💰 Funds Donated</div></div>`:''}
+        <div class="stat-card"><div class="stat-num">${fundReqs.length}</div><div class="stat-label">💰 Fund Requests</div></div>
+        ${r!=='needy'?`<div class="stat-card"><div class="stat-num">${foods.length}</div><div class="stat-label">🌾 Rashan Donations</div></div>`:''}
+        <div class="stat-card"><div class="stat-num">${problems.length}</div><div class="stat-label">💬 Problems</div></div>
+      </div>`;
+  } catch(e){}
+}
+
+// ───── BLOOD ────────────────────────────────────────────────────────────
+function loadBloodSection(){
+  const r=currentUser.role, tabs=document.getElementById('blood-tabs');
+  tabs.innerHTML = r==='donor'
+    ? `<button class="tab" onclick="setBloodTab('donate')">➕ Donate Blood</button><button class="tab active" onclick="setBloodTab('list')">📋 My Donations</button>`
+    : `<button class="tab" onclick="setBloodTab('request')">🆘 Request Blood</button><button class="tab active" onclick="setBloodTab('list')">📋 My Requests</button>`;
+  setBloodTab('list');
+}
+function setBloodTab(tab){
+  document.querySelectorAll('#blood-tabs .tab').forEach(t=>t.classList.toggle('active',
+    (tab==='donate'&&t.textContent.includes('Donate'))||(tab==='request'&&t.textContent.includes('Request'))||(tab==='list'&&t.textContent.includes('My'))));
+  document.getElementById('blood-donate-panel').innerHTML='';
+  document.getElementById('blood-request-panel').innerHTML='';
+  document.getElementById('blood-list').innerHTML='';
+  if (tab==='donate'){
+    document.getElementById('blood-donate-panel').innerHTML = `
+      <div class="form-panel"><h3>🩸 Donate Blood — ${PLACE}</h3>
+        <div style="margin-bottom:12px;"><span class="id-pill">${donorIdOf(currentUser.id)}</span></div>
+        <div class="form-row">
+          <div class="form-group"><label>Blood Group</label><select id="bd-group">${['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g=>`<option>${g}</option>`).join('')}</select></div>
+          <div class="form-group"><label>Units</label><input type="number" id="bd-units" value="1" min="1"></div>
+        </div>
+        <div class="form-group"><label>City</label><input type="text" id="bd-city" value="${PLACE}"></div>
+        <div class="form-group"><label>Notes</label><textarea id="bd-notes"></textarea></div>
+        <button class="btn btn-green" onclick="submitBloodDonation()">Submit Donation</button>
+        <div id="bd-msg"></div></div>`;
+  } else if (tab==='request'){
+    document.getElementById('blood-request-panel').innerHTML = `
+      <div class="form-panel"><h3>🆘 Request Blood — ${PLACE}</h3>
+        <div style="margin-bottom:12px;"><span class="id-pill">${needyIdOf(currentUser.id)}</span></div>
+        <div class="form-row">
+          <div class="form-group"><label>Blood Group</label><select id="br-group">${['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g=>`<option>${g}</option>`).join('')}</select></div>
+          <div class="form-group"><label>Units Needed</label><input type="number" id="br-units" value="1" min="1"></div>
+        </div>
+        <div class="form-group"><label>City</label><input type="text" id="br-city" value="${PLACE}"></div>
+        <div class="form-group"><label>Urgency</label><select id="br-urgency"><option value="normal">Normal</option><option value="urgent">Urgent</option><option value="critical">Critical</option></select></div>
+        <div class="form-group"><label>Notes</label><textarea id="br-notes"></textarea></div>
+        <button class="btn btn-green" onclick="submitBloodRequest()">Submit Request</button>
+        <div id="br-msg"></div></div>`;
+  } else { renderBloodList(); }
+}
+async function submitBloodDonation(){
+  const btn=document.querySelector('#blood-donate-panel .btn-green');
+  if(btn) btn.disabled=true;
+  try { await api('POST','/blood/donate',{ blood_group:document.getElementById('bd-group').value, units:parseInt(document.getElementById('bd-units').value), city:document.getElementById('bd-city').value||PLACE, notes:document.getElementById('bd-notes').value });
+    document.getElementById('bd-msg').innerHTML = '<div class="success-msg">Please send your donation proof on this number <a href="tel:03123456789"><b>03123456789</b></a> to approve your donation.</div>';
+    if(btn){ btn.disabled=true; btn.textContent='✅ Submitted'; }
+  } catch(e){ document.getElementById('bd-msg').innerHTML=`<div class="error-msg">${e.message}</div>`; if(btn) btn.disabled=false; }
+}
+async function submitBloodRequest(){
+  const btn=document.querySelector('#blood-request-panel .btn-green');
+  if(btn) btn.disabled=true;
+  try { await api('POST','/blood/request',{ blood_group:document.getElementById('br-group').value, units_needed:parseInt(document.getElementById('br-units').value), city:document.getElementById('br-city').value||PLACE, urgency:document.getElementById('br-urgency').value, notes:document.getElementById('br-notes').value });
+    document.getElementById('br-msg').innerHTML = '<div class="success-msg">Your request has been received. Please visit <b>Charminar Chowrangi</b> to fulfill your request within one week after your application is approved.</div>';
+    if(btn){ btn.disabled=true; btn.textContent='✅ Submitted'; }
+  } catch(e){ document.getElementById('br-msg').innerHTML=`<div class="error-msg">${e.message}</div>`; if(btn) btn.disabled=false; }
+}
+async function renderBloodList(){
+  const ep = currentUser.role==='needy'?'/blood/requests':'/blood/donations';
+  try { const items = await api('GET',ep);
+    const el = document.getElementById('blood-list');
+    if (!items.length){ el.innerHTML=emptyState('🩸','No records'); return; }
+    el.innerHTML = `<div class="cards-grid">${items.map(i=>`
+      <div class="card">
+        <div class="card-header"><div class="card-title">🩸 ${i.blood_group}</div><span class="badge badge-${i.status}">${i.status}</span></div>
+        <div class="card-row"><span>Units</span>${i.units||i.units_needed}</div>
+        <div class="card-row"><span>City</span>${i.city}</div>
+        ${i.urgency?`<div class="card-row"><span>Urgency</span>${i.urgency}</div>`:''}
+        <div class="card-row"><span>Date</span>${fmt(i.created_at)}</div>
+      </div>`).join('')}</div>`;
+  } catch(e){}
+}
+
+// ───── FUND ─────────────────────────────────────────────────────────────
+function loadFundSection(){
+  const r=currentUser.role, tabs=document.getElementById('fund-tabs');
+  tabs.innerHTML = r==='donor'
+    ? `<button class="tab" onclick="setFundTab('donate')">➕ Donate Funds</button><button class="tab active" onclick="setFundTab('list')">📋 My Donations</button>`
+    : `<button class="tab" onclick="setFundTab('request')">🆘 Request Aid</button><button class="tab active" onclick="setFundTab('list')">📋 My Requests</button>`;
+  setFundTab('list');
+}
+function setFundTab(tab){
+  document.querySelectorAll('#fund-tabs .tab').forEach(t=>t.classList.toggle('active',
+    (tab==='donate'&&t.textContent.includes('Donate'))||(tab==='request'&&t.textContent.includes('Request'))||(tab==='list'&&t.textContent.includes('My'))));
+  document.getElementById('fund-donate-panel').innerHTML='';
+  document.getElementById('fund-request-panel').innerHTML='';
+  document.getElementById('fund-list').innerHTML='';
+  if (tab==='donate'){
+    document.getElementById('fund-donate-panel').innerHTML = `
+      <div class="form-panel"><h3>💰 Donate Funds</h3>
+        <div style="margin-bottom:12px;"><span class="id-pill">${donorIdOf(currentUser.id)}</span></div>
+        <div class="form-group"><label>Amount (PKR)</label><input type="number" id="fd-amount" min="1"></div>
+        <div class="form-group"><label>Purpose (optional)</label><input type="text" id="fd-purpose"></div>
+        <div class="form-group"><label>Notes</label><textarea id="fd-notes"></textarea></div>
+        <button class="btn btn-green" onclick="submitFundDonation()">Donate</button>
+        <div id="fd-msg"></div></div>`;
+  } else if (tab==='request'){
+    document.getElementById('fund-request-panel').innerHTML = `
+      <div class="form-panel"><h3>🆘 Request Financial Aid</h3>
+        <div style="margin-bottom:12px;"><span class="id-pill">${needyIdOf(currentUser.id)}</span></div>
+        <div class="form-group"><label>Amount Needed (PKR)</label><input type="number" id="fr-amount" min="1"></div>
+        <div class="form-group"><label>Reason</label><input type="text" id="fr-reason"></div>
+        <div class="form-group"><label>Details</label><textarea id="fr-notes"></textarea></div>
+        <button class="btn btn-green" onclick="submitFundRequest()">Submit Request</button>
+        <div id="fr-msg"></div></div>`;
+  } else { renderFundList(); }
+}
+async function submitFundDonation(){
+  const btn=document.querySelector('#fund-donate-panel .btn-green');
+  if(btn) btn.disabled=true;
+  try { await api('POST','/fund/donate',{ amount:parseFloat(document.getElementById('fd-amount').value), purpose:document.getElementById('fd-purpose').value, notes:document.getElementById('fd-notes').value });
+    document.getElementById('fd-msg').innerHTML = '<div class="success-msg">Please send your donation proof on this number <a href="tel:03123456789"><b>03123456789</b></a> to approve your donation.</div>';
+    if(btn){ btn.disabled=true; btn.textContent='✅ Submitted'; }
+  } catch(e){ document.getElementById('fd-msg').innerHTML=`<div class="error-msg">${e.message}</div>`; if(btn) btn.disabled=false; }
+}
+async function submitFundRequest(){
+  const btn=document.querySelector('#fund-request-panel .btn-green');
+  if(btn) btn.disabled=true;
+  try { await api('POST','/fund/request',{ amount_needed:parseFloat(document.getElementById('fr-amount').value), reason:document.getElementById('fr-reason').value, notes:document.getElementById('fr-notes').value });
+    document.getElementById('fr-msg').innerHTML = '<div class="success-msg">Your request has been received. Please visit <b>Charminar Chowrangi</b> to fulfill your request within one week after your application is approved.</div>';
+    if(btn){ btn.disabled=true; btn.textContent='✅ Submitted'; }
+  } catch(e){ document.getElementById('fr-msg').innerHTML=`<div class="error-msg">${e.message}</div>`; if(btn) btn.disabled=false; }
+}
+async function renderFundList(){
+  const ep = currentUser.role==='needy'?'/fund/requests':'/fund/donations';
+  try { const items = await api('GET',ep);
+    const el = document.getElementById('fund-list');
+    if (!items.length){ el.innerHTML=emptyState('💰','No records'); return; }
+    el.innerHTML = `<div class="cards-grid">${items.map(i=>`
+      <div class="card">
+        <div class="card-header"><div class="card-title">💰 PKR ${(i.amount||i.amount_needed||0).toLocaleString()}</div>${i.status?`<span class="badge badge-${i.status}">${i.status}</span>`:''}</div>
+        ${i.purpose?`<div class="card-row"><span>Purpose</span>${i.purpose}</div>`:''}
+        ${i.reason?`<div class="card-row"><span>Reason</span>${i.reason}</div>`:''}
+        <div class="card-row"><span>Date</span>${fmt(i.created_at)}</div>
+      </div>`).join('')}</div>`;
+  } catch(e){}
+}
+
+// ───── FOOD ─────────────────────────────────────────────────────────────
+function loadFoodSection(){
+  const r=currentUser.role, tabs=document.getElementById('food-tabs');
+  tabs.innerHTML = r==='donor'
+    ? `<button class="tab" onclick="setFoodTab('donate')">➕ Donate Rashan</button><button class="tab active" onclick="setFoodTab('list')">📋 My Donations</button>`
+    : `<button class="tab" onclick="setFoodTab('request')">🆘 Request Rashan</button><button class="tab active" onclick="setFoodTab('list')">📋 My Requests</button>`;
+  setFoodTab('list');
+}
+function setFoodTab(tab){
+  document.querySelectorAll('#food-tabs .tab').forEach(t=>t.classList.toggle('active',
+    (tab==='donate'&&t.textContent.includes('Donate'))||(tab==='request'&&t.textContent.includes('Request'))||(tab==='list'&&t.textContent.includes('My'))));
+  document.getElementById('food-donate-panel').innerHTML='';
+  document.getElementById('food-request-panel').innerHTML='';
+  document.getElementById('food-list').innerHTML='';
+  const cats = ['Rice','Flour','Oil','Sugar','Pulses','Other'];
+  if (tab==='donate'){
+    document.getElementById('food-donate-panel').innerHTML = `
+      <div class="form-panel"><h3>🌾 Donate Rashan</h3>
+        <div style="margin-bottom:12px;"><span class="id-pill">${donorIdOf(currentUser.id)}</span></div>
+        <p style="font-size:13px;color:var(--gray);margin-bottom:12px;">Enter the quantity (kg) for each item you want to donate. Leave 0 if not donating that item.</p>
+        <div class="form-row">
+          <div class="form-group"><label>🍚 Rice (kg)</label><input type="number" id="fod-rice" min="0" step="0.5" value="0"></div>
+          <div class="form-group"><label>🌾 Flour (kg)</label><input type="number" id="fod-flour" min="0" step="0.5" value="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>🫙 Oil (kg)</label><input type="number" id="fod-oil" min="0" step="0.5" value="0"></div>
+          <div class="form-group"><label>🍬 Sugar (kg)</label><input type="number" id="fod-sugar" min="0" step="0.5" value="0"></div>
+        </div>
+        <div class="form-group" style="max-width:220px;"><label>🫘 Pulses (kg)</label><input type="number" id="fod-pulses" min="0" step="0.5" value="0"></div>
+        <div class="form-group"><label>City</label><input type="text" id="fod-city" value="${PLACE}"></div>
+        <div class="form-group"><label>Notes</label><textarea id="fod-notes"></textarea></div>
+        <button class="btn btn-green" id="fod-submit-btn" onclick="submitFoodDonation()">Donate Rashan</button>
+        <div id="fod-msg"></div></div>`;
+  } else if (tab==='request'){
+    document.getElementById('food-request-panel').innerHTML = `
+      <div class="form-panel"><h3>🆘 Request Rashan</h3>
+        <div style="margin-bottom:12px;"><span class="id-pill">${needyIdOf(currentUser.id)}</span></div>
+        <p style="font-size:13px;color:var(--gray);margin-bottom:12px;">Enter how many kg of each item you need. Leave 0 for items you don't need.</p>
+        <div class="form-row">
+          <div class="form-group"><label>🍚 Rice (kg)</label><input type="number" id="for-rice" min="0" step="0.5" value="0"></div>
+          <div class="form-group"><label>🌾 Flour (kg)</label><input type="number" id="for-flour" min="0" step="0.5" value="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>🫙 Oil (kg)</label><input type="number" id="for-oil" min="0" step="0.5" value="0"></div>
+          <div class="form-group"><label>🍬 Sugar (kg)</label><input type="number" id="for-sugar" min="0" step="0.5" value="0"></div>
+        </div>
+        <div class="form-group" style="max-width:220px;"><label>🫘 Pulses (kg)</label><input type="number" id="for-pulses" min="0" step="0.5" value="0"></div>
+        <div class="form-group"><label>Family Members</label><input type="number" id="for-members" value="4" min="1"></div>
+        <div class="form-group"><label>City</label><input type="text" id="for-city" value="${PLACE}"></div>
+        <div class="form-group"><label>Notes</label><textarea id="for-notes"></textarea></div>
+        <button class="btn btn-green" id="for-submit-btn" onclick="submitFoodRequest()">Submit Request</button>
+        <div id="for-msg"></div></div>`;
+  } else { renderFoodList(); }
+}
+async function submitFoodDonation(){
+  const btn=document.getElementById('fod-submit-btn');
+  if(btn) btn.disabled=true;
+  try {
+    const rice=parseFloat(document.getElementById('fod-rice')?.value)||0;
+    const flour=parseFloat(document.getElementById('fod-flour')?.value)||0;
+    const oil=parseFloat(document.getElementById('fod-oil')?.value)||0;
+    const sugar=parseFloat(document.getElementById('fod-sugar')?.value)||0;
+    const pulses=parseFloat(document.getElementById('fod-pulses')?.value)||0;
+    if(rice+flour+oil+sugar+pulses<=0){ document.getElementById('fod-msg').innerHTML='<div class="error-msg">Please enter at least one item with quantity (kg).</div>'; if(btn) btn.disabled=false; return; }
+    await api('POST','/food/donate',{ rice_kg:rice, flour_kg:flour, oil_kg:oil, sugar_kg:sugar, pulses_kg:pulses, city:document.getElementById('fod-city').value||PLACE, notes:document.getElementById('fod-notes').value });
+    document.getElementById('fod-msg').innerHTML='<div class="success-msg">Please send your donation proof on this number <a href="tel:03123456789"><b>03123456789</b></a> to approve your donation.</div>';
+    if(btn){ btn.disabled=true; btn.textContent='✅ Submitted'; }
+  } catch(e){ document.getElementById('fod-msg').innerHTML=`<div class="error-msg">${e.message}</div>`; if(btn) btn.disabled=false; }
+}
+async function submitFoodRequest(){
+  const btn=document.getElementById('for-submit-btn');
+  if(btn) btn.disabled=true;
+  try {
+    const rice=parseFloat(document.getElementById('for-rice')?.value)||0;
+    const flour=parseFloat(document.getElementById('for-flour')?.value)||0;
+    const oil=parseFloat(document.getElementById('for-oil')?.value)||0;
+    const sugar=parseFloat(document.getElementById('for-sugar')?.value)||0;
+    const pulses=parseFloat(document.getElementById('for-pulses')?.value)||0;
+    if(rice+flour+oil+sugar+pulses<=0){ document.getElementById('for-msg').innerHTML='<div class="error-msg">Please enter at least one item with quantity (kg).</div>'; if(btn) btn.disabled=false; return; }
+    await api('POST','/food/request',{ rice_kg:rice, flour_kg:flour, oil_kg:oil, sugar_kg:sugar, pulses_kg:pulses, family_members:parseInt(document.getElementById('for-members').value)||1, city:document.getElementById('for-city').value||PLACE, notes:document.getElementById('for-notes').value });
+    document.getElementById('for-msg').innerHTML='<div class="success-msg">Your request has been received. Please visit <b>Charminar Chowrangi</b> to fulfill your request within one week after your application is approved.</div>';
+    if(btn){ btn.disabled=true; btn.textContent='✅ Submitted'; }
+  } catch(e){ document.getElementById('for-msg').innerHTML=`<div class="error-msg">${e.message}</div>`; if(btn) btn.disabled=false; }
+}
+async function renderFoodList(){
+  const ep = currentUser.role==='needy'?'/food/requests':'/food/donations';
+  try { const items = await api('GET',ep);
+    const el = document.getElementById('food-list');
+    if (!items.length){ el.innerHTML=emptyState('🌾','No records'); return; }
+    el.innerHTML = `<div class="cards-grid">${items.map(i=>`
+      <div class="card">
+        <div class="card-header"><div class="card-title">🌾 ${i.items||i.items_needed}</div><span class="badge badge-${i.status}">${i.status}</span></div>
+        ${i.family_members?`<div class="card-row"><span>Family</span>${i.family_members}</div>`:''}
+        <div class="card-row"><span>City</span>${i.city}</div>
+        <div class="card-row"><span>Date</span>${fmt(i.created_at)}</div>
+      </div>`).join('')}</div>`;
+  } catch(e){}
+}
+
+// ───── PROBLEM ──────────────────────────────────────────────────────────
+function loadProblemSection(){
+  document.getElementById('problem-tabs').innerHTML = `<button class="tab" onclick="setProblemTab('submit')">➕ Submit Problem</button><button class="tab active" onclick="setProblemTab('list')">📋 My Problems</button>`;
+  setProblemTab('list');
+}
+function setProblemTab(tab){
+  document.querySelectorAll('#problem-tabs .tab').forEach(t=>t.classList.toggle('active',
+    (tab==='submit'&&t.textContent.includes('Submit'))||(tab==='list'&&t.textContent.includes('My'))));
+  document.getElementById('problem-submit-panel').innerHTML='';
+  document.getElementById('problem-list').innerHTML='';
+  if (tab==='submit'){
+    document.getElementById('problem-submit-panel').innerHTML = `
+      <div class="form-panel"><h3>💬 Submit Your Problem</h3>
+        <div style="margin-bottom:12px;"><span class="id-pill">${needyIdOf(currentUser.id)}</span></div>
+        <div class="form-group"><label>Title</label><input type="text" id="pr-title"></div>
+        <div class="form-group"><label>Category</label><select id="pr-cat">
+          <option value="Family Issue">Family Issue</option><option value="Financial Problem">Financial Problem</option>
+          <option value="Medical Issue">Medical Issue</option><option value="Legal Help">Legal Help</option><option value="Other">Other</option>
+        </select></div>
+        <div class="form-group"><label>Describe</label><textarea id="pr-desc" style="min-height:120px"></textarea></div>
+        <button class="btn btn-green" onclick="submitProblem()">Submit</button>
+        <div id="pr-msg"></div></div>`;
+  } else { renderProblemList(); }
+}
+async function submitProblem(){
+  try { await api('POST','/problem/submit',{ title:document.getElementById('pr-title').value, category:document.getElementById('pr-cat').value, description:document.getElementById('pr-desc').value });
+    document.getElementById('pr-msg').innerHTML='<div class="success-msg">✅ Problem submitted for counseling.</div>';
+  } catch(e){ document.getElementById('pr-msg').innerHTML=`<div class="error-msg">${e.message}</div>`; }
+}
+async function renderProblemList(){
+  try { const items = await api('GET','/problem/list');
+    const el = document.getElementById('problem-list');
+    if (!items.length){ el.innerHTML=emptyState('💬','No problems yet'); return; }
+    el.innerHTML = `<div class="cards-grid">${items.map(i=>`
+      <div class="card">
+        <div class="card-header"><div class="card-title">💬 ${i.title}</div><span class="badge badge-${i.status}">${(i.status||'').replace('_',' ')}</span></div>
+        <div class="card-row"><span>Category</span>${i.category}</div>
+        <div class="card-row"><span>Date</span>${fmt(i.created_at)}</div>
+        ${i.admin_response?`<div class="admin-note"><strong>📝 Counselor Response:</strong><br>${i.admin_response}</div>`:''}
+      </div>`).join('')}</div>`;
+  } catch(e){}
+}
+
+// ───── AUTO LOGIN ───────────────────────────────────────────────────────
+if (token && currentUser) initApp(); else document.getElementById('auth-screen').style.display='flex';
+</script>
+</body>
+</html>
